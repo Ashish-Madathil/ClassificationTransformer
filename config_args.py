@@ -54,7 +54,7 @@ def get_args(parser,eval=False):
     # Testing Models
     parser.add_argument('--inference', action='store_true')
     parser.add_argument('--resume', action='store_true')
-    parser.add_argument('--saved_model_name', type=str, default='')
+    parser.add_argument('--saved_model_name', type=str, default='best_model_checkpoint.pth')
     
     parser.add_argument('--overwrite', action='store_true')
     parser.add_argument('--name', type=str, default='')

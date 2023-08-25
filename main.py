@@ -10,6 +10,7 @@ import utils.logger as logger
 from pdb import set_trace as stop
 from optim_schedule import WarmupLinearSchedule
 from run_epoch import run_epoch
+import pandas as pd
 
 args = get_args(argparse.ArgumentParser())
 
@@ -19,6 +20,12 @@ print('Train Known: {}'.format(args.train_known_labels))
 print('Test Known:  {}'.format(args.test_known_labels))
 
 train_loader,valid_loader,test_loader = get_data(args)
+
+
+def save_predictions_to_csv(predictions, csv_filename='predictions.csv'):
+    predictions_df = pd.DataFrame(predictions, columns=['Filename', 'EXP_Pred', 'ICM_Pred', 'TE_Pred', 'GT'])
+    predictions_df.to_csv(csv_filename, index=False)
+
 
 if args.dataset == 'cub':
     model = CTranModelCub(args.num_labels,args.use_lmt,args.pos_emb,args.layers,args.heads,args.dropout,args.no_x_features)
@@ -30,6 +37,7 @@ else:
 
 def load_saved_model(saved_model_name,model):
     checkpoint = torch.load(saved_model_name)
+    print(checkpoint.keys()) 
     model.load_state_dict(checkpoint['state_dict'])
     return model
 
@@ -41,13 +49,29 @@ if torch.cuda.device_count() > 1:
 model = model.cuda()
 
 if args.inference:
-    model = load_saved_model(args.saved_model_name,model)
+    # model = load_saved_model(args.saved_model_name,model)
+    model.load_state_dict(torch.load('best_model_checkpoint.pth'))
     if test_loader is not None:
         data_loader =test_loader
     else:
         data_loader =valid_loader
     
     all_preds,all_targs,all_masks,all_ids,test_loss,test_loss_unk = run_epoch(args,model,data_loader,None,1,'Testing')
+    all_preds_csv = all_preds.clone()
+    all_preds_csv = torch.sigmoid(all_preds_csv)
+    all_preds_csv = all_preds_csv.squeeze(0)
+    # print(all_preds.shape, all_preds.size(2))
+    all_preds_csv[:,0] = all_preds_csv[:,0] * 4
+    all_preds_csv[:,1:] = all_preds_csv[:,1:] * 3
+    all_preds_csv = torch.round(all_preds_csv).int()
+    # Assuming all_ids contains the image filenames
+    extracted_predictions = []  # Extract and structure the predictions here
+    for idx, filename in enumerate(all_ids):
+        # extracted_predictions.append((filename, all_preds[idx], all_targs[idx]))
+        extracted_predictions.append((filename, all_preds_csv[idx, 0].item(), all_preds_csv[idx, 1].item(), all_preds_csv[idx, 2].item(), all_targs[idx].int().tolist()))
+
+    # Save the predictions to a CSV file
+    save_predictions_to_csv(extracted_predictions)    
     test_metrics = evaluate.compute_metrics(args,all_preds,all_targs,all_masks,test_loss,test_loss_unk,0,args.test_known_labels)
 
     exit(0)
@@ -78,6 +102,12 @@ else:
 metrics_logger = logger.Logger(args)
 loss_logger = logger.LossLogger(args.model_name)
 
+#NEWLY ADDED
+best_valid_loss = float('inf')
+best_valid_epoch = 0
+patience = 50  # Number of epochs to wait for improvement before stopping
+###
+
 for epoch in range(1,args.epochs+1):
     print('======================== {} ========================'.format(epoch))
     for param_group in optimizer.param_groups:
@@ -86,9 +116,9 @@ for epoch in range(1,args.epochs+1):
     train_loader.dataset.epoch = epoch
     ################### Train #################
     all_preds,all_targs,all_masks,all_ids,train_loss,train_loss_unk = run_epoch(args,model,train_loader,optimizer,epoch,'Training',train=True,warmup_scheduler=scheduler_warmup)
-    print('all_preds : ',all_preds.shape, all_preds)
-    print('all_targs : ',all_targs.shape, all_targs, all_targs.shape[1])
-    print('all_masks : ',all_masks.shape, all_masks)
+    # print('all_preds : ',all_preds.shape, all_preds)
+    # print('all_targs : ',all_targs.shape, all_targs, all_targs.shape[1])
+    # print('all_masks : ',all_masks.shape, all_masks)
     train_metrics = evaluate.compute_metrics(args,all_preds,all_targs,all_masks,train_loss,train_loss_unk,0,args.train_known_labels)
     loss_logger.log_losses('train.log',epoch,train_loss,train_metrics,train_loss_unk)
 
@@ -96,6 +126,20 @@ for epoch in range(1,args.epochs+1):
     all_preds,all_targs,all_masks,all_ids,valid_loss,valid_loss_unk = run_epoch(args,model,valid_loader,None,epoch,'Validating')
     valid_metrics = evaluate.compute_metrics(args,all_preds,all_targs,all_masks,valid_loss,valid_loss_unk,0,args.test_known_labels)
     loss_logger.log_losses('valid.log',epoch,valid_loss,valid_metrics,valid_loss_unk)
+
+# NEWLY ADDED
+    if valid_loss < best_valid_loss:
+        best_valid_loss = valid_loss
+        best_valid_epoch = epoch
+        # Save the model checkpoint whenever validation loss improves
+        # torch.save(model.state_dict(), 'best_model_checkpoint.pth')
+        torch.save({'state_dict': model.state_dict()}, 'best_model_checkpoint.pth')
+
+    # Check if training should be stopped based on patience
+    if epoch - best_valid_epoch > patience:
+        print(f"Validation loss hasn't improved for {patience} epochs. Stopping training.")
+        break
+###
 
     ################### Test #################
     if test_loader is not None:
