@@ -269,32 +269,6 @@ def mean_avg_precision(true_targets, predictions, axis=0):
     meanAP = metrics.average_precision_score(true_targets, predictions, average='macro', pos_label=1)
     return meanAP
 
-# def custom_mean_avg_precision(all_targets, all_predictions, unknown_label_mask):
-#     APs = []
-#     for label_idx in range(all_targets.size(1)):
-#         all_targets_unk = torch.masked_select(all_targets[:,label_idx],unknown_label_mask[:,label_idx].type(torch.ByteTensor))
-#         all_predictions_unk = torch.masked_select(all_predictions[:,label_idx],unknown_label_mask[:,label_idx].type(torch.ByteTensor))
-#         if len(all_targets_unk)>0 and all_targets_unk.sum().item() > 0:
-#             AP = metrics.average_precision_score(all_targets_unk, all_predictions_unk, average=None, pos_label=1)
-#             APs.append(AP)
-#     meanAP = np.array(APs).mean()
-#     return meanAP
-
-# def custom_mean_avg_precision(all_targets, all_predictions, unknown_label_mask_threshold):
-#     APs = []
-#     for label_idx in range(all_targets.size(1)):
-#         unknown_label_mask = all_predictions[:, label_idx] < unknown_label_mask_threshold
-#         all_targets_unk = torch.masked_select(all_targets[:, label_idx], unknown_label_mask)
-#         all_predictions_unk = torch.masked_select(all_predictions[:, label_idx], unknown_label_mask)
-#         # Reshape the arrays to have a shape of (n_samples, 1)
-#         all_targets_unk = all_targets_unk.reshape(-1, 1)
-#         all_predictions_unk = all_predictions_unk.reshape(-1, 1)        
-#         if len(all_targets_unk) > 0 and all_targets_unk.sum().item() > 0:
-#             AP = metrics.average_precision_score(all_targets_unk, all_predictions_unk, average=None, pos_label=1)
-#             APs.append(AP)
-#     meanAP = np.array(APs).mean()
-#     return meanAP
-
 def custom_mean_avg_precision(all_targets, all_predictions, unknown_label_mask):
     APs = []
     for label_idx in range(all_targets.shape[1]):
@@ -316,7 +290,6 @@ def custom_mean_avg_precision(all_targets, all_predictions, unknown_label_mask):
     
     meanAP = np.array(APs).mean()
     return meanAP
-
 
 
 # def custom_mean_avg_precision(all_targets, all_predictions, unknown_label_mask_threshold):
@@ -346,16 +319,4 @@ def custom_mean_avg_precision(all_targets, all_predictions, unknown_label_mask):
 
 
 
-
-
-# def custom_mean_avg_precision(all_targets, all_predictions, unknown_label_mask):
-#     APs = []
-#     for label_idx in range(all_targets.size(1)):
-#         all_targets_unk = torch.masked_select(all_targets[:, label_idx], unknown_label_mask[:, label_idx])
-#         all_predictions_unk = torch.masked_select(all_predictions[:, label_idx], unknown_label_mask[:, label_idx])
-#         if len(all_targets_unk) > 0 and all_targets_unk.sum().item() > 0:
-#             AP = metrics.average_precision_score(all_targets_unk, all_predictions_unk, average=None, pos_label=1)
-#             APs.append(AP)
-#     meanAP = np.array(APs).mean()
-#     return meanAP
 
