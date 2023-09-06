@@ -35,10 +35,15 @@ def run_epoch(args,model,data,optimizer,epoch,desc,train=False,warmup_scheduler=
         unk_mask = custom_replace(mask,1,0,0)
         all_image_ids += batch['imageIDs']
         
+        print('IMAGES : ', images.size(), images.shape)
+        print('LABELS : ', labels.size(), labels.shape, labels)
+        print('MASK : ', mask.size(), mask.shape, mask)
+
         mask_in = mask.clone()
 
         if train:
             pred,int_pred,attns = model(images.cuda(),mask_in.cuda())
+            print('PRED : ', pred.size(), pred)
         else:
             with torch.no_grad():
                 pred,int_pred,attns = model(images.cuda(),mask_in.cuda())
@@ -96,6 +101,8 @@ def run_epoch(args,model,data,optimizer,epoch,desc,train=False,warmup_scheduler=
 
     loss_total = loss_total/float(all_predictions.size(0))
     unk_loss_total = unk_loss_total/float(all_predictions.size(0))
+    print('ALL_PREDICTIONS : ', all_predictions.size(), all_predictions.shape, all_predictions)
+    print('ALL_MASKS : ', all_masks.size(), all_masks.shape, all_masks)
 
     return all_predictions,all_targets,all_masks,all_image_ids,loss_total,unk_loss_total
 

@@ -126,8 +126,19 @@ def get_data(args):
         train_ann_dir = os.path.join(data_root,'train_file.csv')
         test_ann_dir = os.path.join(data_root,'test_file.csv')
         data_dir = os.path.join(data_root,'Images')
-        train_dataset = BlastocystDataset(data_dir, train_ann_dir, split = 'train', transform = trainTransform,known_labels=args.train_known_labels,testing=False)
-        valid_dataset = BlastocystDataset(data_dir, test_ann_dir, split = 'val', transform = testTransform,known_labels=args.test_known_labels,testing=True)        
+        # train_img_root = os.path.join(data_dir,'train2014')
+        # test_img_root = os.path.join(data_dir,'val2014')
+        
+        # train_dataset = BlastocystDataset(data_dir, train_ann_dir, split = 'train', transform = trainTransform, testing=False)
+        # valid_dataset = BlastocystDataset(data_dir, test_ann_dir, split = 'val', transform = testTransform, testing=True)          
+        train_dataset = BlastocystDataset(data_dir, train_ann_dir, label_column = 'EXP', split = 'train', transform = trainTransform,known_labels=args.train_known_labels,testing=False)
+        valid_dataset = BlastocystDataset(data_dir, test_ann_dir, label_column = 'EXP', split = 'val', transform = testTransform,known_labels=args.test_known_labels,testing=True)        
+# Create DataLoader instances for training and testing
+# train_dataset = BlastocystDataset(ann_dir, 'Gardner_train_silver.csv', split='train', transform=trainTransform, testing=False)
+# test_dataset = BlastocystDataset(ann_dir, 'Gardner_test_gold_onlyGardnerScores.csv', split='test', transform=testTransform, testing=True)
+
+# train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+# test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     
 
     elif dataset=='voc':

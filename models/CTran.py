@@ -58,8 +58,13 @@ class CTranModel(nn.Module):
 
 
     def forward(self,images,mask):
-        const_label_input = self.label_input.repeat(images.size(0),1).cuda()
+        if images.is_cuda: 
+            device = images.device
+        else:
+            device = torch.device("cpu")
+        const_label_input = self.label_input.repeat(images.size(0),1).to(device)
         init_label_embeddings = self.label_lt(const_label_input)
+        # init_label_embeddings = self.label_lt(const_label_input).to(device) #NEWLY ADDED 23/08
 
         features = self.backbone(images)
         
@@ -70,7 +75,14 @@ class CTranModel(nn.Module):
             features = features + pos_encoding
 
         features = features.view(features.size(0),features.size(1),-1).permute(0,2,1) 
+        print('features : ',features.size())
 
+#NEWLY ADDED- 23Aug2023
+        # if mask is None:
+        #     mask = torch.zeros(images.size(0), self.num_labels, device=device, dtype=torch.long)  # Placeholder mask
+        # else:
+        #     mask = mask.to(device)
+###
         if self.use_lmt:
             # Convert mask values to positive integers for nn.Embedding
             label_feat_vec = custom_replace(mask,0,1,2).long()
@@ -98,7 +110,9 @@ class CTranModel(nn.Module):
         label_embeddings = embeddings[:,-init_label_embeddings.size(1):,:]
         output = self.output_linear(label_embeddings) 
         diag_mask = torch.eye(output.size(1)).unsqueeze(0).repeat(output.size(0),1,1).cuda()
+        # diag_mask = torch.eye(output.size(1), device=device).unsqueeze(0).repeat(output.size(0), 1, 1) #NEWLY ADDED 23/08/2023
         output = (output*diag_mask).sum(-1)
+        print('output : ', output.size(), output)
 
-        return output,None,attns
+        return output, None, attns
 

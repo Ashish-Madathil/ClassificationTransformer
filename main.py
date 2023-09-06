@@ -22,8 +22,9 @@ print('Test Known:  {}'.format(args.test_known_labels))
 train_loader,valid_loader,test_loader = get_data(args)
 
 
-def save_predictions_to_csv(predictions, csv_filename='predictions.csv'):
-    predictions_df = pd.DataFrame(predictions, columns=['Filename', 'EXP_Pred', 'ICM_Pred', 'TE_Pred', 'GT'])
+def save_predictions_to_csv(predictions, csv_filename='predictions_exp.csv'):
+    # predictions_df = pd.DataFrame(predictions, columns=['Filename', 'EXP_Pred', 'ICM_Pred', 'TE_Pred', 'GT'])
+    predictions_df = pd.DataFrame(predictions, columns=['Filename', 'EXP_Pred', 'GT'])
     predictions_df.to_csv(csv_filename, index=False)
 
 
@@ -50,7 +51,7 @@ model = model.cuda()
 
 if args.inference:
     # model = load_saved_model(args.saved_model_name,model)
-    model.load_state_dict(torch.load('best_model_checkpoint.pth'))
+    model.load_state_dict(torch.load('best_model_checkpoint_exp.pth'))
     if test_loader is not None:
         data_loader =test_loader
     else:
@@ -60,15 +61,21 @@ if args.inference:
     all_preds_csv = all_preds.clone()
     all_preds_csv = torch.sigmoid(all_preds_csv)
     all_preds_csv = all_preds_csv.squeeze(0)
-    # print(all_preds.shape, all_preds.size(2))
-    all_preds_csv[:,0] = all_preds_csv[:,0] * 4
-    all_preds_csv[:,1:] = all_preds_csv[:,1:] * 3
+    print(all_preds.shape, all_preds.size(2))
+    # all_preds_csv[:,0] = all_preds_csv[:,0] * 4
+    # all_preds_csv[:,1:] = all_preds_csv[:,1:] * 3
     all_preds_csv = torch.round(all_preds_csv).int()
+
+    # all_preds_csv[:,0] = torch.argmax(all_preds_csv[:,0])
+    # all_preds_csv[:,1:] = all_preds_csv[:,1:].argmax().item()
+    # all_preds_csv[:,1:] = torch.argmax(all_preds_csv[:,1:])
+
     # Assuming all_ids contains the image filenames
     extracted_predictions = []  # Extract and structure the predictions here
     for idx, filename in enumerate(all_ids):
         # extracted_predictions.append((filename, all_preds[idx], all_targs[idx]))
-        extracted_predictions.append((filename, all_preds_csv[idx, 0].item(), all_preds_csv[idx, 1].item(), all_preds_csv[idx, 2].item(), all_targs[idx].int().tolist()))
+        # extracted_predictions.append((filename, all_preds_csv[idx, 0].item(), all_preds_csv[idx, 1].item(), all_preds_csv[idx, 2].item(), all_targs[idx].int().tolist()))
+        extracted_predictions.append((filename, all_preds_csv[idx], all_targs[idx].int().tolist()))
 
     # Save the predictions to a CSV file
     save_predictions_to_csv(extracted_predictions)    
@@ -132,8 +139,8 @@ for epoch in range(1,args.epochs+1):
         best_valid_loss = valid_loss
         best_valid_epoch = epoch
         # Save the model checkpoint whenever validation loss improves
-        # torch.save(model.state_dict(), 'best_model_checkpoint.pth')
-        torch.save({'state_dict': model.state_dict()}, 'best_model_checkpoint.pth')
+        torch.save(model.state_dict(), 'best_model_checkpoint_exp.pth')
+        # torch.save({'state_dict': model.state_dict()}, 'best_model_checkpoint.pth')
 
     # Check if training should be stopped based on patience
     if epoch - best_valid_epoch > patience:

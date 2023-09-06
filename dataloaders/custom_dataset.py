@@ -9,4 +9,8 @@ from PIL import Image
 class CustomDataset(Dataset):
     def __init__ (self, csv_path, transform=None):
         self.data = pd.read_csv(csv_path)
+        self.transform = transform
+
+        
+
         

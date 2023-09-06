@@ -77,7 +77,7 @@ def get_args(parser,eval=False):
         args.num_labels = 112
     elif args.dataset == 'blastocyst':
         # args.num_labels = 29
-        args.num_labels = 3     
+        args.num_labels = 5     
     else:
         print('dataset not included')
         exit()
@@ -94,7 +94,7 @@ def get_args(parser,eval=False):
         model_name += '.unk_loss'
         args.train_known_labels = 100
     else:
-        args.train_known_labels = 3     #Blastocyst
+        args.train_known_labels = 5     #Blastocyst
 
 
     if args.pos_emb:
@@ -112,7 +112,7 @@ def get_args(parser,eval=False):
 
     
     # args.test_known_labels = int(args.test_known*0.01*args.num_labels)
-    args.test_known_labels = 3
+    args.test_known_labels = 5
 
     if args.dataset == 'cub':
         # reset the TOTAL number of labels to be concepts+classes
