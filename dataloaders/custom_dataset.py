@@ -14,6 +14,18 @@ class CustomDataset(Dataset):
     def __len__(self):
         return len(self.data)
     
+    def __getitem__ (self, index):
+        img_path = self.data.iloc[index, 0]
+        image = Image.open(img_path)
+        label = self.data.iloc[index, 1]
+        if self.transform:
+            image = self.transform(image)
         
+        return image, label
+    
+    
+
+
+    
 
         
