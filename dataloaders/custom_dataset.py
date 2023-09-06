@@ -8,4 +8,5 @@ from PIL import Image
 
 class CustomDataset(Dataset):
     def __init__ (self, csv_path, transform=None):
-        se
+        self.data = pd.read_csv(csv_path)
+        
